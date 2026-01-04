@@ -20,10 +20,11 @@
         .scene {
             perspective: 1000px;
             position: relative;
-            /* 高さ100%を基準にし、アスペクト比を維持しつつ画面内に収める */
-            height: 100%;
+            /* サイズ調整の肝: 親要素に収まる範囲でアスペクト比を維持 */
             width: auto;
+            height: auto;
             max-width: 100%;
+            max-height: 100%;
             aspect-ratio: 3/4;
             margin: 0 auto;
         }
@@ -73,7 +74,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 1.5rem; /* カード内部のパディングも少し調整 */
+            padding: 1.5rem;
             text-align: center;
             overflow: hidden;
             background-color: white;
@@ -210,8 +211,8 @@
         <div id="screen-learning" class="screen bg-slate-100 overflow-hidden relative transition-colors duration-200">
             <div id="learning-bg-overlay" class="absolute inset-0 pointer-events-none z-0 transition-colors duration-200"></div>
 
-            <!-- Top Bar: Reduced Padding (p-4 -> p-2) -->
-            <div class="p-2 pt-3 px-4 flex items-center gap-4 z-10 shrink-0">
+            <!-- Top Bar: Reduced Padding -->
+            <div class="p-2 pt-3 px-4 flex items-center gap-4 z-10 shrink-0 h-16">
                 <button id="btn-quit" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-full transition-colors">
                     <i class="ph ph-x text-xl"></i>
                 </button>
@@ -221,10 +222,10 @@
                 <span id="session-counter" class="text-sm font-bold text-slate-500 font-mono">1/10</span>
             </div>
 
-            <!-- Card Area: Reduced Padding (p-6 -> p-2), Added min-h-0 -->
+            <!-- Card Area: Flex-1 to fill available space, centered content -->
             <div class="flex-1 relative flex flex-col items-center justify-center p-2 z-10 min-h-0 w-full">
                 
-                <!-- Card: Added max-h-full to prevent overflow -->
+                <!-- Card: CSS aspect-ratio ensures it fits within parent flex container without overflowing -->
                 <div class="scene relative">
                     
                     <div id="card-next" class="card card-next">
@@ -272,13 +273,13 @@
                 </div>
             </div>
 
-            <!-- Bottom Buttons: Reduced Padding (p-6 -> p-4) -->
-            <div class="p-4 pt-0 pb-6 grid grid-cols-2 gap-3 z-10 shrink-0 items-center">
-                <button id="btn-ng" class="flex flex-col items-center justify-center p-3 bg-white/80 backdrop-blur-sm border-2 border-red-100 text-red-500 rounded-2xl shadow-sm hover:bg-red-50 active:scale-95 transition-all">
+            <!-- Bottom Buttons: Reduced Padding for safety -->
+            <div class="p-4 pt-0 grid grid-cols-2 gap-3 z-10 shrink-0 h-24 items-start">
+                <button id="btn-ng" class="flex flex-col items-center justify-center p-3 bg-white/80 backdrop-blur-sm border-2 border-red-100 text-red-500 rounded-2xl shadow-sm hover:bg-red-50 active:scale-95 transition-all h-full">
                     <i class="ph ph-x text-2xl mb-1"></i>
                     <span class="font-bold text-sm">わからない</span>
                 </button>
-                <button id="btn-ok" class="flex flex-col items-center justify-center p-3 bg-white/80 backdrop-blur-sm border-2 border-green-100 text-green-500 rounded-2xl shadow-sm hover:bg-green-50 active:scale-95 transition-all">
+                <button id="btn-ok" class="flex flex-col items-center justify-center p-3 bg-white/80 backdrop-blur-sm border-2 border-green-100 text-green-500 rounded-2xl shadow-sm hover:bg-green-50 active:scale-95 transition-all h-full">
                     <i class="ph ph-check text-2xl mb-1"></i>
                     <span class="font-bold text-sm">覚えた！</span>
                 </button>
