@@ -12,9 +12,13 @@
         body {
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
             background-color: #f1f5f9;
+            /* iOSでのバウンススクロール防止 */
             overscroll-behavior-y: none;
+            /* テキスト選択防止 */
             user-select: none;
             -webkit-user-select: none;
+            /* スマホでのタップハイライトを消す */
+            -webkit-tap-highlight-color: transparent;
         }
 
         .scene {
@@ -34,6 +38,9 @@
             background-color: white;
             border-radius: 1.5rem;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            
+            /* カード自体へのタッチアクション制限 */
+            touch-action: none;
         }
         .card:active {
             cursor: grabbing;
@@ -67,7 +74,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 1.5rem; /* paddingを少し縮小 */
+            padding: 1.5rem;
             text-align: center;
             overflow: hidden;
             background-color: white;
@@ -106,11 +113,14 @@
             display: flex;
         }
         
-        /* 学習画面専用のスタイル：高さを固定してスクロールさせない */
+        /* 学習画面専用のスタイル：画面固定を強化 */
         #screen-learning.active {
-            height: 100dvh; /* dynamic viewport height */
-            min-height: auto;
-            overflow: hidden;
+            position: fixed; /* 画面を固定 */
+            inset: 0;
+            height: 100dvh; /* アドレスバーを考慮した高さ */
+            width: 100vw;
+            overflow: hidden; /* はみ出し禁止 */
+            touch-action: none; /* ブラウザ標準のスクロール操作を無効化 */
         }
 
         .pointer-events-none {
@@ -122,8 +132,7 @@
 
     <div id="app" class="max-w-md mx-auto min-h-screen relative overflow-hidden bg-slate-50 shadow-2xl">
         
-        <!-- Setup Screen (Initial) - Remains scrollable/standard -->
-        <div id="screen-setup" class="screen active p-6">
+        <div id="screen-setup" class="screen active p-6 overflow-y-auto">
             <header class="mt-8 mb-8 text-center">
                 <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-4">
                     <i class="ph ph-cards text-3xl"></i>
@@ -196,11 +205,9 @@
             </button>
         </div>
 
-        <!-- Learning Screen - Adjusted for no-scroll and tight layout -->
         <div id="screen-learning" class="screen bg-slate-100 overflow-hidden relative transition-colors duration-200">
             <div id="learning-bg-overlay" class="absolute inset-0 pointer-events-none z-0 transition-colors duration-200"></div>
 
-            <!-- Top Bar: Reduced padding from p-4 to p-2 -->
             <div class="p-2 pt-3 px-4 flex items-center gap-4 z-10 shrink-0">
                 <button id="btn-quit" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-full transition-colors">
                     <i class="ph ph-x text-xl"></i>
@@ -211,16 +218,13 @@
                 <span id="session-counter" class="text-sm font-bold text-slate-500 font-mono">1/10</span>
             </div>
 
-            <!-- Card Area: Reduced padding from p-6 to p-2. Added min-h-0 for flex containment. -->
             <div class="flex-1 relative flex items-center justify-center p-2 scene-container z-10 min-h-0">
-                
-                <!-- Added max-h-full to keep card within bounds -->
                 <div class="scene w-full max-w-sm aspect-[3/4] relative max-h-full">
                     
                     <div id="card-next" class="card card-next">
                          <div class="card-face card-face-front">
                             <span id="card-no-next" class="absolute top-6 left-6 text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">No. ---</span>
-                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16"> <!-- gap/pt adjusted -->
+                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16">
                                 <h2 id="card-en-next" class="text-4xl font-bold text-slate-800 break-words w-full leading-tight">Next</h2>
                                 <button class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-full shadow-sm">
                                     <i class="ph ph-speaker-high text-2xl"></i>
@@ -233,7 +237,7 @@
                         <div class="card-face card-face-front">
                             <span id="card-no" class="absolute top-6 left-6 text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">No. 001</span>
                             
-                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16"> <!-- gap reduced, pt reduced -->
+                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16">
                                 <h2 id="card-en" class="text-4xl font-bold text-slate-800 break-words w-full leading-tight">English</h2>
                                 <button id="btn-speak-front" class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors pointer-events-auto shadow-sm">
                                     <i class="ph ph-speaker-high text-2xl"></i>
@@ -262,7 +266,6 @@
                 </div>
             </div>
 
-            <!-- Bottom Buttons: Reduced padding from p-6 to p-4, reduced gap -->
             <div class="p-4 pb-6 grid grid-cols-2 gap-3 z-10 shrink-0">
                 <button id="btn-ng" class="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm border-2 border-red-100 text-red-500 rounded-2xl shadow-sm hover:bg-red-50 active:scale-95 transition-all">
                     <i class="ph ph-x text-2xl mb-1"></i>
@@ -275,7 +278,7 @@
             </div>
         </div>
 
-        <div id="screen-result" class="screen items-center justify-center p-6 bg-slate-50 text-center">
+        <div id="screen-result" class="screen items-center justify-center p-6 bg-slate-50 text-center overflow-y-auto">
             <div class="bg-white p-8 rounded-3xl shadow-lg w-full mb-8 max-w-sm">
                 <div class="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
                     <i class="ph ph-trophy text-3xl"></i>
@@ -315,7 +318,6 @@
     <script>
         let appWordList = [];
 
-        // データの読み込み確認
         if (typeof wordList !== 'undefined') {
             appWordList = wordList.map((item, index) => ({
                 ...item,
@@ -325,7 +327,7 @@
             window.addEventListener('load', () => {
                 setTimeout(() => {
                      if (appWordList.length === 0) {
-                         alert('【重要】\nデータファイル (words.js) が読み込めませんでした。\n\nこのHTMLファイルと同じフォルダに words.js があるか確認してください。');
+                         alert('【重要】\nデータファイル (words.js) が読み込めませんでした。');
                      }
                 }, 500);
             });
@@ -334,7 +336,7 @@
         const state = {
             queue: [],
             currentIndex: 0,
-            progress: {}, // { uid: 'ok' | 'ng' }
+            progress: {},
             isFlipped: false,
             animating: false
         };
@@ -416,10 +418,16 @@
         function switchScreen(screenName) {
             Object.values(els.screens).forEach(el => el.classList.remove('active'));
             els.screens[screenName].classList.add('active');
+            
+            // 学習画面のときだけ body のスクロールを完全禁止
+            if (screenName === 'learning') {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
         }
 
         function renderSetupScreen() {
-            // セクション一覧を抽出
             const sections = Array.from(new Set(appWordList.map(w => w.section)));
             els.setup.selectSection.innerHTML = '<option value="All">すべて</option>';
             sections.forEach(s => {
@@ -429,7 +437,6 @@
                 els.setup.selectSection.appendChild(opt);
             });
 
-            // 統計表示
             const okCount = appWordList.filter(w => state.progress[w.uid] === 'ok').length;
             const ngCount = appWordList.filter(w => state.progress[w.uid] === 'ng').length;
             const total = appWordList.length;
@@ -556,7 +563,6 @@
             switchScreen('result');
         }
 
-        // 音声合成関連
         let englishVoice = null;
 
         function loadVoices() {
@@ -574,21 +580,11 @@
         function speak(text) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
-
                 const uttr = new SpeechSynthesisUtterance(text);
                 uttr.lang = 'en-US';
-
-                if (!englishVoice) {
-                    loadVoices();
-                }
-
-                if (englishVoice) {
-                    uttr.voice = englishVoice;
-                }
-
+                if (englishVoice) uttr.voice = englishVoice;
                 uttr.rate = 1.0; 
                 uttr.pitch = 1.0;
-
                 window.speechSynthesis.speak(uttr);
             } else {
                 alert("音声読み上げに対応していません");
@@ -662,9 +658,7 @@
                 } else {
                     cardContainer.style.transition = 'transform 0.3s ease';
                     cardContainer.style.transform = ''; 
-                    
                     els.learning.bgOverlay.style.backgroundColor = 'transparent';
-
                     setTimeout(() => {
                         cardContainer.style.transition = '';
                     }, 300);
@@ -674,8 +668,17 @@
             };
 
             // タッチイベント
+            // 【修正ポイント】passive: false にして preventDefault() を呼び出すことでスクロールを阻止
             cardContainer.addEventListener('touchstart', (e) => handleStart(e.touches[0].clientX), { passive: true });
-            cardContainer.addEventListener('touchmove', (e) => handleMove(e.touches[0].clientX), { passive: true });
+            
+            cardContainer.addEventListener('touchmove', (e) => {
+                if (isDragging) {
+                    // スクロールを止める重要な一行
+                    e.preventDefault(); 
+                    handleMove(e.touches[0].clientX);
+                }
+            }, { passive: false }); // ここを false にしないと preventDefault が効かない
+            
             cardContainer.addEventListener('touchend', handleEnd);
 
             // マウスイベント（PCデバッグ用）
@@ -690,10 +693,8 @@
                 if(isDragging) handleEnd();
             });
 
-            // クリック（裏返し）
             els.learning.card.addEventListener('click', (e) => {
                 if (state.animating || isSwiped) return;
-                
                 state.isFlipped = !state.isFlipped;
                 els.learning.card.classList.toggle('is-flipped', state.isFlipped);
             });
