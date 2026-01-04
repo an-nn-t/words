@@ -106,11 +106,15 @@
             display: flex;
         }
 
-        /* 学習画面専用: スクロール防止と高さ固定 */
+        /* 学習画面専用: 強力なスクロール防止 */
         #screen-learning.active {
+            position: fixed; /* 画面に固定 */
+            inset: 0;
+            width: 100%;
             height: 100dvh;
-            min-height: auto;
             overflow: hidden;
+            touch-action: none; /* タッチスクロールを無効化 */
+            z-index: 50;
         }
 
         .pointer-events-none {
@@ -415,6 +419,17 @@
         function switchScreen(screenName) {
             Object.values(els.screens).forEach(el => el.classList.remove('active'));
             els.screens[screenName].classList.add('active');
+            
+            // 学習画面の時だけbodyのスクロールを完全に禁止する
+            if (screenName === 'learning') {
+                document.body.style.overflow = 'hidden';
+                document.body.style.position = 'fixed';
+                document.body.style.width = '100%';
+            } else {
+                document.body.style.overflow = '';
+                document.body.style.position = '';
+                document.body.style.width = '';
+            }
         }
 
         function renderSetupScreen() {
