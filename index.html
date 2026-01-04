@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Flash Words</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="./words.js"></script>
+
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #f1f5f9;
+            overscroll-behavior-y: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .scene {
+            perspective: 1000px;
+            position: relative;
+        }
+
+        .card {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: center center;
+            cursor: grab;
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+        .card:active {
+            cursor: grabbing;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-next {
+            z-index: 0;
+            transform: scale(1);
+            opacity: 1;
+            pointer-events: none;
+            background-color: white;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .card-current {
+            z-index: 10;
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        .card-face-back {
+            transform: rotateY(180deg);
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+        }
+
+        .card-face-front {
+            border: 1px solid #f1f5f9;
+        }
+
+        .swipe-right {
+            animation: flyRight 0.3s forwards;
+        }
+        .swipe-left {
+            animation: flyLeft 0.3s forwards;
+        }
+
+        @keyframes flyRight {
+            to { transform: translateX(120%) rotate(20deg); opacity: 0; }
+        }
+        @keyframes flyLeft {
+            to { transform: translateX(-120%) rotate(-20deg); opacity: 0; }
+        }
+
+        .screen {
+            display: none;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        .pointer-events-none {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="text-slate-800 transition-colors duration-300">
+
+    <div id="app" class="max-w-md mx-auto min-h-screen relative overflow-hidden bg-slate-50 shadow-2xl">
+        
+        <div id="screen-setup" class="screen active p-6">
+            <header class="mt-8 mb-8 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-4">
+                    <i class="ph ph-cards text-3xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-slate-900">単語帳</h1>
+            </header>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6">
+                <h2 class="font-bold text-lg mb-4 flex items-center gap-2">
+                    <i class="ph ph-chart-bar text-slate-400"></i> 学習状況
+                </h2>
+                <div class="w-full bg-slate-100 rounded-full h-4 mb-2 overflow-hidden flex">
+                    <div id="progress-bar-ok" class="bg-green-500 h-full transition-all duration-500" style="width: 0%"></div>
+                    <div id="progress-bar-ng" class="bg-red-400 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-xs text-slate-500 font-medium">
+                    <span id="stat-ok">覚えた: 0</span>
+                    <span id="stat-ng">苦手: 0</span>
+                </div>
+            </div>
+
+            <div class="flex-1 space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">セクション</label>
+                    <div class="relative">
+                        <select id="select-section" class="w-full p-4 pr-10 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="All">すべて</option>
+                        </select>
+                        <i class="ph ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="order" value="sequential" checked class="peer hidden">
+                        <div class="p-4 rounded-xl border border-slate-200 bg-white text-slate-500 text-center peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 transition-all">
+                            <i class="ph ph-list-numbers text-xl mb-1 block"></i>
+                            <span class="text-xs font-bold">順番通り</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="order" value="random" class="peer hidden">
+                        <div class="p-4 rounded-xl border border-slate-200 bg-white text-slate-500 text-center peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 transition-all">
+                            <i class="ph ph-shuffle text-xl mb-1 block"></i>
+                            <span class="text-xs font-bold">ランダム</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="target" value="all" checked class="peer hidden">
+                        <div class="p-4 rounded-xl border border-slate-200 bg-white text-slate-500 text-center peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-700 transition-all">
+                            <i class="ph ph-stack text-xl mb-1 block"></i>
+                            <span class="text-xs font-bold">すべて</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer" id="btn-target-weak">
+                        <input type="radio" name="target" value="weak_only" class="peer hidden">
+                        <div class="p-4 rounded-xl border border-slate-200 bg-white text-slate-500 text-center peer-checked:bg-red-50 peer-checked:border-red-500 peer-checked:text-red-700 transition-all">
+                            <i class="ph ph-x-circle text-xl mb-1 block"></i>
+                            <span class="text-xs font-bold">苦手のみ</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <button id="btn-start" class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transform active:scale-95 transition-all">
+                <i class="ph ph-play-circle text-xl"></i> スタート
+            </button>
+        </div>
+
+        <div id="screen-learning" class="screen bg-slate-100 overflow-hidden relative transition-colors duration-200">
+            <div id="learning-bg-overlay" class="absolute inset-0 pointer-events-none z-0 transition-colors duration-200"></div>
+
+            <div class="p-4 flex items-center gap-4 z-10">
+                <button id="btn-quit" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-full transition-colors">
+                    <i class="ph ph-x text-xl"></i>
+                </button>
+                <div class="flex-1 h-2 bg-slate-200/50 rounded-full overflow-hidden">
+                    <div id="session-progress-bar" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <span id="session-counter" class="text-sm font-bold text-slate-500 font-mono">1/10</span>
+            </div>
+
+            <div class="flex-1 relative flex items-center justify-center p-6 scene-container z-10">
+                
+                <div class="scene w-full max-w-sm aspect-[3/4] relative">
+                    
+                    <div id="card-next" class="card card-next">
+                         <div class="card-face card-face-front">
+                            <span id="card-no-next" class="absolute top-6 left-6 text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">No. ---</span>
+                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-8 pt-24">
+                                <h2 id="card-en-next" class="text-4xl font-bold text-slate-800 break-words w-full leading-tight">Next</h2>
+                                <button class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-full shadow-sm">
+                                    <i class="ph ph-speaker-high text-2xl"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="card-current" class="card card-current cursor-pointer">
+                        <div class="card-face card-face-front">
+                            <span id="card-no" class="absolute top-6 left-6 text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">No. 001</span>
+                            
+                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-8 pt-24">
+                                <h2 id="card-en" class="text-4xl font-bold text-slate-800 break-words w-full leading-tight">English</h2>
+                                <button id="btn-speak-front" class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors pointer-events-auto shadow-sm">
+                                    <i class="ph ph-speaker-high text-2xl"></i>
+                                </button>
+                            </div>
+
+                            <p class="absolute bottom-6 text-xs text-slate-400">タップして答えを表示</p>
+                        </div>
+
+                        <div class="card-face card-face-back">
+                            <span class="absolute top-6 left-6 text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded">Answer</span>
+                            
+                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4">
+                                <p id="card-en-sub" class="text-lg text-slate-400 font-medium mb-2">English</p>
+                                
+                                <div class="w-12 h-1 bg-blue-200 rounded-full mb-6"></div>
+                                
+                                <h3 id="card-ja" class="text-3xl font-bold text-slate-800 leading-relaxed break-words w-full">日本語の意味</h3>
+                            </div>
+
+                            <div class="absolute bottom-6 w-full px-6">
+                                <p id="card-section" class="text-xs text-slate-400 border-t border-slate-200 pt-4 w-full truncate">Section Name</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 grid grid-cols-2 gap-4 z-10">
+                <button id="btn-ng" class="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm border-2 border-red-100 text-red-500 rounded-2xl shadow-sm hover:bg-red-50 active:scale-95 transition-all">
+                    <i class="ph ph-x text-2xl mb-1"></i>
+                    <span class="font-bold text-sm">わからない</span>
+                </button>
+                <button id="btn-ok" class="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm border-2 border-green-100 text-green-500 rounded-2xl shadow-sm hover:bg-green-50 active:scale-95 transition-all">
+                    <i class="ph ph-check text-2xl mb-1"></i>
+                    <span class="font-bold text-sm">覚えた！</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="screen-result" class="screen items-center justify-center p-6 bg-slate-50 text-center">
+            <div class="bg-white p-8 rounded-3xl shadow-lg w-full mb-8 max-w-sm">
+                <div class="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="ph ph-trophy text-3xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Session Complete!</h2>
+                <p class="text-slate-500 mb-8 text-sm">今回の学習結果</p>
+                
+                <div class="flex items-end justify-center gap-1 mb-8">
+                    <span id="result-percent" class="text-6xl font-bold text-blue-600">100</span>
+                    <span class="text-xl font-bold text-slate-300 mb-2">%</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 mb-2">
+                    <div class="bg-green-50 p-4 rounded-2xl">
+                        <p class="text-xs text-green-600 font-bold mb-1">OK</p>
+                        <p id="result-ok" class="text-2xl font-bold text-green-700">0</p>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-2xl">
+                        <p class="text-xs text-red-500 font-bold mb-1">NG</p>
+                        <p id="result-ng" class="text-2xl font-bold text-red-600">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-3 w-full max-w-sm">
+                <button id="btn-home" class="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-4 rounded-xl shadow-sm flex items-center justify-center gap-2">
+                    <i class="ph ph-house text-lg"></i> ホームに戻る
+                </button>
+                <button id="btn-retry-weak" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hidden">
+                    <i class="ph ph-arrow-clockwise text-lg"></i> 苦手だけリトライ
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let appWordList = [];
+
+        if (typeof wordList !== 'undefined') {
+            appWordList = wordList.map((item, index) => ({
+                ...item,
+                uid: `${item.section}-${item.no}-${item.en}-${index}`
+            }));
+        } else {
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                     if (appWordList.length === 0) {
+                         alert('【重要】\nデータファイル (words.js) が読み込めませんでした。\n\nこのHTMLファイルと同じフォルダに words.js があるか確認してください。');
+                     }
+                }, 500);
+            });
+        }
+
+        const state = {
+            queue: [],
+            currentIndex: 0,
+            progress: {}, 
+            isFlipped: false,
+            animating: false
+        };
+
+        const els = {
+            screens: {
+                setup: document.getElementById('screen-setup'),
+                learning: document.getElementById('screen-learning'),
+                result: document.getElementById('screen-result'),
+            },
+            setup: {
+                selectSection: document.getElementById('select-section'),
+                btnStart: document.getElementById('btn-start'),
+                progressBarOk: document.getElementById('progress-bar-ok'),
+                progressBarNg: document.getElementById('progress-bar-ng'),
+                statOk: document.getElementById('stat-ok'),
+                statNg: document.getElementById('stat-ng'),
+                targetWeakRadio: document.getElementById('btn-target-weak'),
+            },
+            learning: {
+                bgOverlay: document.getElementById('learning-bg-overlay'),
+                btnQuit: document.getElementById('btn-quit'),
+                progressBar: document.getElementById('session-progress-bar'),
+                counter: document.getElementById('session-counter'),
+                
+                card: document.getElementById('card-current'),
+                cardEn: document.getElementById('card-en'),
+                cardNo: document.getElementById('card-no'),
+                cardJa: document.getElementById('card-ja'),
+                cardEnSub: document.getElementById('card-en-sub'),
+                cardSection: document.getElementById('card-section'),
+                
+                cardNext: document.getElementById('card-next'),
+                cardEnNext: document.getElementById('card-en-next'),
+                cardNoNext: document.getElementById('card-no-next'), 
+
+                btnSpeak: document.getElementById('btn-speak-front'),
+                btnOk: document.getElementById('btn-ok'),
+                btnNg: document.getElementById('btn-ng'),
+            },
+            result: {
+                percent: document.getElementById('result-percent'),
+                countOk: document.getElementById('result-ok'),
+                countNg: document.getElementById('result-ng'),
+                btnHome: document.getElementById('btn-home'),
+                btnRetryWeak: document.getElementById('btn-retry-weak'),
+            }
+        };
+
+        function init() {
+            loadProgress();
+            
+            if (appWordList.length > 0) {
+                renderSetupScreen();
+                setupEventListeners();
+                els.setup.btnStart.disabled = false;
+                els.setup.btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                els.setup.btnStart.disabled = true;
+                els.setup.btnStart.classList.add('opacity-50', 'cursor-not-allowed');
+                els.setup.btnStart.innerHTML = '<i class="ph ph-warning-circle text-xl"></i> データなし';
+            }
+        }
+
+        function loadProgress() {
+            const saved = localStorage.getItem('vocab-progress');
+            if (saved) {
+                try {
+                    state.progress = JSON.parse(saved);
+                } catch(e) { console.error(e); }
+            }
+        }
+
+        function saveProgress(uid, status) {
+            state.progress[uid] = status;
+            localStorage.setItem('vocab-progress', JSON.stringify(state.progress));
+        }
+
+        function switchScreen(screenName) {
+            Object.values(els.screens).forEach(el => el.classList.remove('active'));
+            els.screens[screenName].classList.add('active');
+        }
+
+        function renderSetupScreen() {
+            const sections = Array.from(new Set(appWordList.map(w => w.section)));
+            els.setup.selectSection.innerHTML = '<option value="All">すべて</option>';
+            sections.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                els.setup.selectSection.appendChild(opt);
+            });
+
+            const okCount = appWordList.filter(w => state.progress[w.uid] === 'ok').length;
+            const ngCount = appWordList.filter(w => state.progress[w.uid] === 'ng').length;
+            const total = appWordList.length;
+
+            els.setup.statOk.textContent = `覚えた: ${okCount}`;
+            els.setup.statNg.textContent = `苦手: ${ngCount}`;
+            els.setup.progressBarOk.style.width = `${(okCount / total) * 100}%`;
+            els.setup.progressBarNg.style.width = `${(ngCount / total) * 100}%`;
+
+            if (ngCount === 0) {
+                els.setup.targetWeakRadio.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                els.setup.targetWeakRadio.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        function startLearning(retryWeak = false) {
+            let queue = [];
+            
+            if (retryWeak) {
+                queue = state.queue.filter(w => state.progress[w.uid] === 'ng');
+            } else {
+                const section = els.setup.selectSection.value;
+                const order = document.querySelector('input[name="order"]:checked').value;
+                const target = document.querySelector('input[name="target"]:checked').value;
+
+                let filtered = appWordList;
+                if (section !== 'All') filtered = filtered.filter(w => w.section === section);
+                if (target === 'weak_only') filtered = filtered.filter(w => state.progress[w.uid] === 'ng');
+
+                if (order === 'random') {
+                    filtered = [...filtered].sort(() => Math.random() - 0.5);
+                }
+                queue = filtered;
+            }
+
+            if (queue.length === 0) {
+                alert("対象の単語がありません");
+                return;
+            }
+
+            state.queue = queue;
+            state.currentIndex = 0;
+            state.isFlipped = false;
+            state.animating = false;
+
+            renderCard();
+            switchScreen('learning');
+        }
+
+        function renderCard() {
+            const currentData = state.queue[state.currentIndex];
+            const nextData = state.queue[state.currentIndex + 1];
+            const total = state.queue.length;
+
+            els.learning.progressBar.style.width = `${(state.currentIndex / total) * 100}%`;
+            els.learning.counter.textContent = `${state.currentIndex + 1} / ${total}`;
+
+            els.learning.cardEn.textContent = currentData.en;
+            els.learning.cardNo.textContent = `No. ${currentData.no}`;
+            els.learning.cardJa.textContent = currentData.ja;
+            els.learning.cardEnSub.textContent = currentData.en;
+            els.learning.cardSection.textContent = currentData.section;
+
+            if (nextData) {
+                els.learning.cardNext.style.display = 'block';
+                els.learning.cardEnNext.textContent = nextData.en;
+                if (els.learning.cardNoNext) els.learning.cardNoNext.textContent = `No. ${nextData.no}`;
+            } else {
+                els.learning.cardNext.style.display = 'none';
+            }
+
+            els.learning.card.classList.remove('is-flipped', 'swipe-right', 'swipe-left');
+            els.learning.card.style.transform = '';
+            
+            els.learning.bgOverlay.style.backgroundColor = 'transparent';
+
+            state.isFlipped = false;
+        }
+
+        function handleNext(status) {
+            if (state.animating) return;
+            state.animating = true;
+
+            const currentWord = state.queue[state.currentIndex];
+            saveProgress(currentWord.uid, status);
+
+            const animationClass = status === 'ok' ? 'swipe-right' : 'swipe-left';
+            els.learning.card.classList.add(animationClass);
+
+            if (status === 'ok') {
+                els.learning.bgOverlay.style.backgroundColor = 'rgba(74, 222, 128, 0.2)'; 
+            } else {
+                els.learning.bgOverlay.style.backgroundColor = 'rgba(248, 113, 113, 0.2)';
+            }
+
+            setTimeout(() => {
+                if (state.currentIndex >= state.queue.length - 1) {
+                    showResult();
+                } else {
+                    state.currentIndex++;
+                    renderCard();
+                    state.animating = false;
+                }
+            }, 300);
+        }
+
+        function showResult() {
+            const sessionQueue = state.queue;
+            const okCount = sessionQueue.filter(w => state.progress[w.uid] === 'ok').length;
+            const ngCount = sessionQueue.length - okCount;
+            
+            els.result.percent.textContent = Math.round((okCount / sessionQueue.length) * 100);
+            els.result.countOk.textContent = okCount;
+            els.result.countNg.textContent = ngCount;
+
+            if (ngCount > 0) {
+                els.result.btnRetryWeak.classList.remove('hidden');
+                els.result.btnRetryWeak.onclick = () => startLearning(true);
+            } else {
+                els.result.btnRetryWeak.classList.add('hidden');
+            }
+
+            switchScreen('result');
+        }
+
+        let englishVoice = null;
+
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            englishVoice = voices.find(v => v.lang === 'en-US') 
+                        || voices.find(v => v.lang === 'en-GB')
+                        || voices.find(v => v.lang.startsWith('en'));
+        }
+
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = loadVoices;
+            loadVoices();
+        }
+
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+
+                const uttr = new SpeechSynthesisUtterance(text);
+                uttr.lang = 'en-US';
+
+                if (!englishVoice) {
+                    loadVoices();
+                }
+
+                if (englishVoice) {
+                    uttr.voice = englishVoice;
+                }
+
+                uttr.rate = 1.0; 
+                uttr.pitch = 1.0;
+
+                window.speechSynthesis.speak(uttr);
+            } else {
+                alert("音声読み上げに対応していません");
+            }
+        }
+
+        function setupEventListeners() {
+            els.setup.btnStart.addEventListener('click', () => startLearning(false));
+
+            els.learning.btnQuit.addEventListener('click', () => {
+                loadProgress();
+                renderSetupScreen();
+                switchScreen('setup');
+            });
+
+            els.learning.btnOk.addEventListener('click', () => handleNext('ok'));
+            els.learning.btnNg.addEventListener('click', () => handleNext('ng'));
+            
+            els.learning.btnSpeak.addEventListener('click', (e) => {
+                e.stopPropagation();
+                speak(state.queue[state.currentIndex].en);
+            });
+
+            els.result.btnHome.addEventListener('click', () => {
+                renderSetupScreen();
+                switchScreen('setup');
+            });
+
+            const cardContainer = els.learning.card;
+            let startX = null;
+            let currentX = 0;
+            let isDragging = false;
+            let isSwiped = false; 
+
+            const handleStart = (clientX) => {
+                if (state.animating) return;
+                startX = clientX;
+                currentX = clientX;
+                isDragging = true;
+                isSwiped = false;
+                cardContainer.style.transition = 'none';
+            };
+
+            const handleMove = (clientX) => {
+                if (!isDragging || startX === null) return;
+                currentX = clientX;
+                const diff = currentX - startX;
+                
+                const rotate = diff * 0.1;
+                const baseRotate = state.isFlipped ? 180 : 0;
+                cardContainer.style.transform = `translateX(${diff}px) rotateY(${baseRotate + (diff * 0.05)}deg) rotateZ(${rotate * 0.2}deg)`;
+
+                const opacity = Math.min(Math.abs(diff) / 300, 0.3);
+                
+                if (diff > 0) {
+                    els.learning.bgOverlay.style.backgroundColor = `rgba(74, 222, 128, ${opacity})`; 
+                } else {
+                    els.learning.bgOverlay.style.backgroundColor = `rgba(248, 113, 113, ${opacity})`;
+                }
+            };
+
+            const handleEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                const diff = currentX - startX;
+
+                if (Math.abs(diff) > 100) {
+                    isSwiped = true;
+                    handleNext(diff > 0 ? 'ok' : 'ng');
+                } else {
+                    cardContainer.style.transition = 'transform 0.3s ease';
+                    cardContainer.style.transform = ''; 
+                    
+                    els.learning.bgOverlay.style.backgroundColor = 'transparent';
+
+                    setTimeout(() => {
+                        cardContainer.style.transition = '';
+                    }, 300);
+                }
+                startX = null;
+                currentX = 0;
+            };
+
+            cardContainer.addEventListener('touchstart', (e) => handleStart(e.touches[0].clientX), { passive: true });
+            cardContainer.addEventListener('touchmove', (e) => handleMove(e.touches[0].clientX), { passive: true });
+            cardContainer.addEventListener('touchend', handleEnd);
+
+            cardContainer.addEventListener('mousedown', (e) => handleStart(e.clientX));
+            window.addEventListener('mousemove', (e) => {
+                if(isDragging) {
+                    e.preventDefault();
+                    handleMove(e.clientX);
+                }
+            });
+            window.addEventListener('mouseup', () => {
+                if(isDragging) handleEnd();
+            });
+
+            els.learning.card.addEventListener('click', (e) => {
+                if (state.animating || isSwiped) return;
+                
+                state.isFlipped = !state.isFlipped;
+                els.learning.card.classList.toggle('is-flipped', state.isFlipped);
+            });
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
