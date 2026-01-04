@@ -67,7 +67,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 2rem;
+            padding: 1.5rem; /* カード内部のパディングも少し調整 */
             text-align: center;
             overflow: hidden;
             background-color: white;
@@ -106,6 +106,13 @@
             display: flex;
         }
 
+        /* 学習画面専用: スクロール防止と高さ固定 */
+        #screen-learning.active {
+            height: 100dvh;
+            min-height: auto;
+            overflow: hidden;
+        }
+
         .pointer-events-none {
             pointer-events: none;
         }
@@ -115,6 +122,7 @@
 
     <div id="app" class="max-w-md mx-auto min-h-screen relative overflow-hidden bg-slate-50 shadow-2xl">
         
+        <!-- Setup Screen (Initial) -->
         <div id="screen-setup" class="screen active p-6">
             <header class="mt-8 mb-8 text-center">
                 <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-4">
@@ -188,10 +196,12 @@
             </button>
         </div>
 
+        <!-- Learning Screen (Modified for tight layout & no-scroll) -->
         <div id="screen-learning" class="screen bg-slate-100 overflow-hidden relative transition-colors duration-200">
             <div id="learning-bg-overlay" class="absolute inset-0 pointer-events-none z-0 transition-colors duration-200"></div>
 
-            <div class="p-4 flex items-center gap-4 z-10">
+            <!-- Top Bar: Reduced Padding (p-4 -> p-2) -->
+            <div class="p-2 pt-3 px-4 flex items-center gap-4 z-10 shrink-0">
                 <button id="btn-quit" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-full transition-colors">
                     <i class="ph ph-x text-xl"></i>
                 </button>
@@ -201,14 +211,16 @@
                 <span id="session-counter" class="text-sm font-bold text-slate-500 font-mono">1/10</span>
             </div>
 
-            <div class="flex-1 relative flex items-center justify-center p-6 scene-container z-10">
+            <!-- Card Area: Reduced Padding (p-6 -> p-2), Added min-h-0 -->
+            <div class="flex-1 relative flex items-center justify-center p-2 scene-container z-10 min-h-0">
                 
-                <div class="scene w-full max-w-sm aspect-[3/4] relative">
+                <!-- Card: Added max-h-full to prevent overflow -->
+                <div class="scene w-full max-w-sm aspect-[3/4] relative max-h-full">
                     
                     <div id="card-next" class="card card-next">
                          <div class="card-face card-face-front">
                             <span id="card-no-next" class="absolute top-6 left-6 text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">No. ---</span>
-                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-8 pt-24">
+                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16">
                                 <h2 id="card-en-next" class="text-4xl font-bold text-slate-800 break-words w-full leading-tight">Next</h2>
                                 <button class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-full shadow-sm">
                                     <i class="ph ph-speaker-high text-2xl"></i>
@@ -221,7 +233,7 @@
                         <div class="card-face card-face-front">
                             <span id="card-no" class="absolute top-6 left-6 text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">No. 001</span>
                             
-                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-8 pt-24">
+                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16">
                                 <h2 id="card-en" class="text-4xl font-bold text-slate-800 break-words w-full leading-tight">English</h2>
                                 <button id="btn-speak-front" class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors pointer-events-auto shadow-sm">
                                     <i class="ph ph-speaker-high text-2xl"></i>
@@ -250,7 +262,8 @@
                 </div>
             </div>
 
-            <div class="p-6 grid grid-cols-2 gap-4 z-10">
+            <!-- Bottom Buttons: Reduced Padding (p-6 -> p-4) -->
+            <div class="p-4 pb-6 grid grid-cols-2 gap-3 z-10 shrink-0">
                 <button id="btn-ng" class="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm border-2 border-red-100 text-red-500 rounded-2xl shadow-sm hover:bg-red-50 active:scale-95 transition-all">
                     <i class="ph ph-x text-2xl mb-1"></i>
                     <span class="font-bold text-sm">わからない</span>
