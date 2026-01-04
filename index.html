@@ -20,6 +20,12 @@
         .scene {
             perspective: 1000px;
             position: relative;
+            /* 高さ100%を基準にし、アスペクト比を維持しつつ画面内に収める */
+            height: 100%;
+            width: auto;
+            max-width: 100%;
+            aspect-ratio: 3/4;
+            margin: 0 auto;
         }
 
         .card {
@@ -216,10 +222,10 @@
             </div>
 
             <!-- Card Area: Reduced Padding (p-6 -> p-2), Added min-h-0 -->
-            <div class="flex-1 relative flex items-center justify-center p-2 scene-container z-10 min-h-0">
+            <div class="flex-1 relative flex flex-col items-center justify-center p-2 z-10 min-h-0 w-full">
                 
                 <!-- Card: Added max-h-full to prevent overflow -->
-                <div class="scene w-full max-w-sm aspect-[3/4] relative max-h-full">
+                <div class="scene relative">
                     
                     <div id="card-next" class="card card-next">
                          <div class="card-face card-face-front">
@@ -267,12 +273,12 @@
             </div>
 
             <!-- Bottom Buttons: Reduced Padding (p-6 -> p-4) -->
-            <div class="p-4 pb-6 grid grid-cols-2 gap-3 z-10 shrink-0">
-                <button id="btn-ng" class="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm border-2 border-red-100 text-red-500 rounded-2xl shadow-sm hover:bg-red-50 active:scale-95 transition-all">
+            <div class="p-4 pt-0 pb-6 grid grid-cols-2 gap-3 z-10 shrink-0 items-center">
+                <button id="btn-ng" class="flex flex-col items-center justify-center p-3 bg-white/80 backdrop-blur-sm border-2 border-red-100 text-red-500 rounded-2xl shadow-sm hover:bg-red-50 active:scale-95 transition-all">
                     <i class="ph ph-x text-2xl mb-1"></i>
                     <span class="font-bold text-sm">わからない</span>
                 </button>
-                <button id="btn-ok" class="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm border-2 border-green-100 text-green-500 rounded-2xl shadow-sm hover:bg-green-50 active:scale-95 transition-all">
+                <button id="btn-ok" class="flex flex-col items-center justify-center p-3 bg-white/80 backdrop-blur-sm border-2 border-green-100 text-green-500 rounded-2xl shadow-sm hover:bg-green-50 active:scale-95 transition-all">
                     <i class="ph ph-check text-2xl mb-1"></i>
                     <span class="font-bold text-sm">覚えた！</span>
                 </button>
