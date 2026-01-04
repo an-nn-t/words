@@ -125,6 +125,18 @@
 
         .pointer-events-none {
             pointer-events: none;
+        /* 学習画面専用のスタイル：画面固定を強化 */
+        #screen-learning.active {
+            position: fixed;
+            inset: 0;
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+            touch-action: none;
+            
+            /* 【追加】ホームバーと重ならないように下部に余白用の変数をセット */
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
         }
     </style>
 </head>
