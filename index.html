@@ -20,13 +20,6 @@
         .scene {
             perspective: 1000px;
             position: relative;
-            /* サイズ調整の肝: 親要素に収まる範囲でアスペクト比を維持 */
-            width: auto;
-            height: auto;
-            max-width: 100%;
-            max-height: 100%;
-            aspect-ratio: 3/4;
-            margin: 0 auto;
         }
 
         .card {
@@ -74,7 +67,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 1.5rem;
+            padding: 1.5rem; /* paddingを少し縮小 */
             text-align: center;
             overflow: hidden;
             background-color: white;
@@ -112,16 +105,12 @@
         .screen.active {
             display: flex;
         }
-
-        /* 学習画面専用: 強力なスクロール防止 */
+        
+        /* 学習画面専用のスタイル：高さを固定してスクロールさせない */
         #screen-learning.active {
-            position: fixed; /* 画面に固定 */
-            inset: 0;
-            width: 100%;
-            height: 100dvh;
+            height: 100dvh; /* dynamic viewport height */
+            min-height: auto;
             overflow: hidden;
-            touch-action: none; /* タッチスクロールを無効化 */
-            z-index: 50;
         }
 
         .pointer-events-none {
@@ -133,7 +122,7 @@
 
     <div id="app" class="max-w-md mx-auto min-h-screen relative overflow-hidden bg-slate-50 shadow-2xl">
         
-        <!-- Setup Screen (Initial) -->
+        <!-- Setup Screen (Initial) - Remains scrollable/standard -->
         <div id="screen-setup" class="screen active p-6">
             <header class="mt-8 mb-8 text-center">
                 <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-4">
@@ -207,12 +196,12 @@
             </button>
         </div>
 
-        <!-- Learning Screen (Modified for tight layout & no-scroll) -->
+        <!-- Learning Screen - Adjusted for no-scroll and tight layout -->
         <div id="screen-learning" class="screen bg-slate-100 overflow-hidden relative transition-colors duration-200">
             <div id="learning-bg-overlay" class="absolute inset-0 pointer-events-none z-0 transition-colors duration-200"></div>
 
-            <!-- Top Bar: Reduced Padding -->
-            <div class="p-2 pt-3 px-4 flex items-center gap-4 z-10 shrink-0 h-16">
+            <!-- Top Bar: Reduced padding from p-4 to p-2 -->
+            <div class="p-2 pt-3 px-4 flex items-center gap-4 z-10 shrink-0">
                 <button id="btn-quit" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-full transition-colors">
                     <i class="ph ph-x text-xl"></i>
                 </button>
@@ -222,16 +211,16 @@
                 <span id="session-counter" class="text-sm font-bold text-slate-500 font-mono">1/10</span>
             </div>
 
-            <!-- Card Area: Flex-1 to fill available space, centered content -->
-            <div class="flex-1 relative flex flex-col items-center justify-center p-2 z-10 min-h-0 w-full">
+            <!-- Card Area: Reduced padding from p-6 to p-2. Added min-h-0 for flex containment. -->
+            <div class="flex-1 relative flex items-center justify-center p-2 scene-container z-10 min-h-0">
                 
-                <!-- Card: CSS aspect-ratio ensures it fits within parent flex container without overflowing -->
-                <div class="scene relative">
+                <!-- Added max-h-full to keep card within bounds -->
+                <div class="scene w-full max-w-sm aspect-[3/4] relative max-h-full">
                     
                     <div id="card-next" class="card card-next">
                          <div class="card-face card-face-front">
                             <span id="card-no-next" class="absolute top-6 left-6 text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">No. ---</span>
-                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16">
+                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16"> <!-- gap/pt adjusted -->
                                 <h2 id="card-en-next" class="text-4xl font-bold text-slate-800 break-words w-full leading-tight">Next</h2>
                                 <button class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-full shadow-sm">
                                     <i class="ph ph-speaker-high text-2xl"></i>
@@ -244,7 +233,7 @@
                         <div class="card-face card-face-front">
                             <span id="card-no" class="absolute top-6 left-6 text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">No. 001</span>
                             
-                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16">
+                            <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16"> <!-- gap reduced, pt reduced -->
                                 <h2 id="card-en" class="text-4xl font-bold text-slate-800 break-words w-full leading-tight">English</h2>
                                 <button id="btn-speak-front" class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors pointer-events-auto shadow-sm">
                                     <i class="ph ph-speaker-high text-2xl"></i>
@@ -273,13 +262,13 @@
                 </div>
             </div>
 
-            <!-- Bottom Buttons: Reduced Padding for safety -->
-            <div class="p-4 pt-0 grid grid-cols-2 gap-3 z-10 shrink-0 h-24 items-start">
-                <button id="btn-ng" class="flex flex-col items-center justify-center p-3 bg-white/80 backdrop-blur-sm border-2 border-red-100 text-red-500 rounded-2xl shadow-sm hover:bg-red-50 active:scale-95 transition-all h-full">
+            <!-- Bottom Buttons: Reduced padding from p-6 to p-4, reduced gap -->
+            <div class="p-4 pb-6 grid grid-cols-2 gap-3 z-10 shrink-0">
+                <button id="btn-ng" class="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm border-2 border-red-100 text-red-500 rounded-2xl shadow-sm hover:bg-red-50 active:scale-95 transition-all">
                     <i class="ph ph-x text-2xl mb-1"></i>
                     <span class="font-bold text-sm">わからない</span>
                 </button>
-                <button id="btn-ok" class="flex flex-col items-center justify-center p-3 bg-white/80 backdrop-blur-sm border-2 border-green-100 text-green-500 rounded-2xl shadow-sm hover:bg-green-50 active:scale-95 transition-all h-full">
+                <button id="btn-ok" class="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm border-2 border-green-100 text-green-500 rounded-2xl shadow-sm hover:bg-green-50 active:scale-95 transition-all">
                     <i class="ph ph-check text-2xl mb-1"></i>
                     <span class="font-bold text-sm">覚えた！</span>
                 </button>
@@ -326,6 +315,7 @@
     <script>
         let appWordList = [];
 
+        // データの読み込み確認
         if (typeof wordList !== 'undefined') {
             appWordList = wordList.map((item, index) => ({
                 ...item,
@@ -344,7 +334,7 @@
         const state = {
             queue: [],
             currentIndex: 0,
-            progress: {}, 
+            progress: {}, // { uid: 'ok' | 'ng' }
             isFlipped: false,
             animating: false
         };
@@ -426,20 +416,10 @@
         function switchScreen(screenName) {
             Object.values(els.screens).forEach(el => el.classList.remove('active'));
             els.screens[screenName].classList.add('active');
-            
-            // 学習画面の時だけbodyのスクロールを完全に禁止する
-            if (screenName === 'learning') {
-                document.body.style.overflow = 'hidden';
-                document.body.style.position = 'fixed';
-                document.body.style.width = '100%';
-            } else {
-                document.body.style.overflow = '';
-                document.body.style.position = '';
-                document.body.style.width = '';
-            }
         }
 
         function renderSetupScreen() {
+            // セクション一覧を抽出
             const sections = Array.from(new Set(appWordList.map(w => w.section)));
             els.setup.selectSection.innerHTML = '<option value="All">すべて</option>';
             sections.forEach(s => {
@@ -449,6 +429,7 @@
                 els.setup.selectSection.appendChild(opt);
             });
 
+            // 統計表示
             const okCount = appWordList.filter(w => state.progress[w.uid] === 'ok').length;
             const ngCount = appWordList.filter(w => state.progress[w.uid] === 'ng').length;
             const total = appWordList.length;
@@ -575,6 +556,7 @@
             switchScreen('result');
         }
 
+        // 音声合成関連
         let englishVoice = null;
 
         function loadVoices() {
@@ -635,6 +617,7 @@
                 switchScreen('setup');
             });
 
+            // スワイプ処理
             const cardContainer = els.learning.card;
             let startX = null;
             let currentX = 0;
@@ -690,10 +673,12 @@
                 currentX = 0;
             };
 
+            // タッチイベント
             cardContainer.addEventListener('touchstart', (e) => handleStart(e.touches[0].clientX), { passive: true });
             cardContainer.addEventListener('touchmove', (e) => handleMove(e.touches[0].clientX), { passive: true });
             cardContainer.addEventListener('touchend', handleEnd);
 
+            // マウスイベント（PCデバッグ用）
             cardContainer.addEventListener('mousedown', (e) => handleStart(e.clientX));
             window.addEventListener('mousemove', (e) => {
                 if(isDragging) {
@@ -705,6 +690,7 @@
                 if(isDragging) handleEnd();
             });
 
+            // クリック（裏返し）
             els.learning.card.addEventListener('click', (e) => {
                 if (state.animating || isSwiped) return;
                 
