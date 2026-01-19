@@ -12,13 +12,22 @@
         body {
             font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
             background-color: #f1f5f9;
-            /* iOSでのバウンススクロール防止 */
             overscroll-behavior-y: none;
-            /* テキスト選択防止 */
             user-select: none;
             -webkit-user-select: none;
-            /* スマホでのタップハイライトを消す */
             -webkit-tap-highlight-color: transparent;
+        }
+
+        /* スクロールバーのカスタマイズ */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
         }
 
         .scene {
@@ -38,8 +47,6 @@
             background-color: white;
             border-radius: 1.5rem;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            
-            /* カード自体へのタッチアクション制限 */
             touch-action: none;
         }
         .card:active {
@@ -52,10 +59,10 @@
 
         .card-next {
             z-index: 0;
-            transform: scale(1);
-            opacity: 1;
+            transform: scale(0.95);
+            opacity: 0.5;
             pointer-events: none;
-            background-color: white;
+            background-color: #f8fafc;
             border: 1px solid #e2e8f0;
         }
         
@@ -91,10 +98,10 @@
         }
 
         .swipe-right {
-            animation: flyRight 0.3s forwards;
+            animation: flyRight 0.4s forwards;
         }
         .swipe-left {
-            animation: flyLeft 0.3s forwards;
+            animation: flyLeft 0.4s forwards;
         }
 
         @keyframes flyRight {
@@ -113,19 +120,6 @@
             display: flex;
         }
         
-        /* 学習画面専用のスタイル：画面固定を強化 */
-        #screen-learning.active {
-            position: fixed; /* 画面を固定 */
-            inset: 0;
-            height: 100dvh; /* アドレスバーを考慮した高さ */
-            width: 100vw;
-            overflow: hidden; /* はみ出し禁止 */
-            touch-action: none; /* ブラウザ標準のスクロール操作を無効化 */
-        }
-
-        .pointer-events-none {
-            pointer-events: none;
-        /* 学習画面専用のスタイル：画面固定を強化 */
         #screen-learning.active {
             position: fixed;
             inset: 0;
@@ -133,10 +127,16 @@
             width: 100vw;
             overflow: hidden;
             touch-action: none;
-            
-            /* 【追加】ホームバーと重ならないように下部に余白用の変数をセット */
             padding-bottom: env(safe-area-inset-bottom, 20px);
         }
+
+        .pointer-events-none {
+            pointer-events: none;
+        }
+        
+        /* 一覧画面の行スタイル */
+        .list-row:nth-child(even) {
+            background-color: #f8fafc;
         }
     </style>
 </head>
@@ -145,76 +145,136 @@
     <div id="app" class="max-w-md mx-auto min-h-screen relative overflow-hidden bg-slate-50 shadow-2xl">
         
         <div id="screen-setup" class="screen active p-6 overflow-y-auto">
-            <header class="mt-8 mb-8 text-center">
+            <header class="mt-8 mb-6 text-center">
                 <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 text-blue-600 rounded-full mb-4">
                     <i class="ph ph-cards text-3xl"></i>
                 </div>
                 <h1 class="text-3xl font-bold text-slate-900">単語帳</h1>
+                <p class="text-xs text-slate-400 mt-1">Ver 2.0 - Enhanced</p>
             </header>
 
-            <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-6">
-                <h2 class="font-bold text-lg mb-4 flex items-center gap-2">
-                    <i class="ph ph-chart-bar text-slate-400"></i> 学習状況
-                </h2>
-                <div class="w-full bg-slate-100 rounded-full h-4 mb-2 overflow-hidden flex">
-                    <div id="progress-bar-ok" class="bg-green-500 h-full transition-all duration-500" style="width: 0%"></div>
-                    <div id="progress-bar-ng" class="bg-red-400 h-full transition-all duration-500" style="width: 0%"></div>
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 mb-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-sm flex items-center gap-2 text-slate-600">
+                        <i class="ph ph-chart-pie-slice text-lg"></i> 学習状況
+                    </h2>
+                    <button id="btn-show-list" class="text-blue-600 text-xs font-bold hover:bg-blue-50 px-3 py-1 rounded-full transition-colors flex items-center gap-1">
+                        <i class="ph ph-list-dashes"></i> 一覧を見る
+                    </button>
                 </div>
-                <div class="flex justify-between text-xs text-slate-500 font-medium">
-                    <span id="stat-ok">覚えた: 0</span>
-                    <span id="stat-ng">苦手: 0</span>
+                
+                <div class="flex items-center gap-2 mb-2 h-3 rounded-full overflow-hidden bg-slate-100">
+                    <div id="bar-ok" class="bg-green-500 h-full transition-all duration-500" style="width: 0%"></div>
+                    <div id="bar-ng" class="bg-red-400 h-full transition-all duration-500" style="width: 0%"></div>
+                    <div id="bar-yet" class="bg-slate-200 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                
+                <div class="grid grid-cols-3 text-center text-xs mt-3">
+                    <div>
+                        <span class="block font-bold text-green-600 text-lg" id="stat-ok">0</span>
+                        <span class="text-slate-400">覚えた</span>
+                    </div>
+                    <div class="border-l border-slate-100">
+                        <span class="block font-bold text-red-500 text-lg" id="stat-ng">0</span>
+                        <span class="text-slate-400">苦手</span>
+                    </div>
+                    <div class="border-l border-slate-100">
+                        <span class="block font-bold text-slate-500 text-lg" id="stat-total">0</span>
+                        <span class="text-slate-400">全単語</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex-1 space-y-4">
+            <button id="btn-resume" class="hidden w-full mb-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl shadow-md flex items-center justify-center gap-2 transform active:scale-95 transition-all animate-bounce-short">
+                <i class="ph ph-arrow-u-up-right text-xl"></i> 続きから学習を再開
+            </button>
+
+            <div class="space-y-5">
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-1">セクション</label>
+                    <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">セクション選択</label>
                     <div class="relative">
-                        <select id="select-section" class="w-full p-4 pr-10 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select id="select-section" class="w-full p-3 pr-10 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                             <option value="All">すべて</option>
                         </select>
                         <i class="ph ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="cursor-pointer">
-                        <input type="radio" name="order" value="sequential" checked class="peer hidden">
-                        <div class="p-4 rounded-xl border border-slate-200 bg-white text-slate-500 text-center peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 transition-all">
-                            <i class="ph ph-list-numbers text-xl mb-1 block"></i>
-                            <span class="text-xs font-bold">順番通り</span>
-                        </div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="order" value="random" class="peer hidden">
-                        <div class="p-4 rounded-xl border border-slate-200 bg-white text-slate-500 text-center peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-700 transition-all">
-                            <i class="ph ph-shuffle text-xl mb-1 block"></i>
-                            <span class="text-xs font-bold">ランダム</span>
-                        </div>
-                    </label>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">出題順</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="order" value="sequential" checked class="peer hidden">
+                            <div class="p-3 rounded-xl border border-slate-200 bg-white text-slate-400 text-center peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-600 transition-all flex items-center justify-center gap-2">
+                                <i class="ph ph-list-numbers text-lg"></i>
+                                <span class="text-xs font-bold">番号順</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="order" value="random" class="peer hidden">
+                            <div class="p-3 rounded-xl border border-slate-200 bg-white text-slate-400 text-center peer-checked:bg-blue-50 peer-checked:border-blue-500 peer-checked:text-blue-600 transition-all flex items-center justify-center gap-2">
+                                <i class="ph ph-shuffle text-lg"></i>
+                                <span class="text-xs font-bold">ランダム</span>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-3">
-                    <label class="cursor-pointer">
-                        <input type="radio" name="target" value="all" checked class="peer hidden">
-                        <div class="p-4 rounded-xl border border-slate-200 bg-white text-slate-500 text-center peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-700 transition-all">
-                            <i class="ph ph-stack text-xl mb-1 block"></i>
-                            <span class="text-xs font-bold">すべて</span>
-                        </div>
-                    </label>
-                    <label class="cursor-pointer" id="btn-target-weak">
-                        <input type="radio" name="target" value="weak_only" class="peer hidden">
-                        <div class="p-4 rounded-xl border border-slate-200 bg-white text-slate-500 text-center peer-checked:bg-red-50 peer-checked:border-red-500 peer-checked:text-red-700 transition-all">
-                            <i class="ph ph-x-circle text-xl mb-1 block"></i>
-                            <span class="text-xs font-bold">苦手のみ</span>
-                        </div>
-                    </label>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-2 ml-1">出題対象</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="target" value="all" checked class="peer hidden">
+                            <div class="p-3 rounded-xl border border-slate-200 bg-white text-slate-400 text-center peer-checked:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:text-indigo-600 transition-all">
+                                <span class="text-xs font-bold block">すべて</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="target" value="unlearned" class="peer hidden">
+                            <div class="p-3 rounded-xl border border-slate-200 bg-white text-slate-400 text-center peer-checked:bg-slate-100 peer-checked:border-slate-500 peer-checked:text-slate-700 transition-all">
+                                <span class="text-xs font-bold block">未学習のみ</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="target" value="weak_only" class="peer hidden">
+                            <div class="p-3 rounded-xl border border-slate-200 bg-white text-slate-400 text-center peer-checked:bg-red-50 peer-checked:border-red-500 peer-checked:text-red-600 transition-all">
+                                <span class="text-xs font-bold block">苦手 (NG)</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="target" value="memorized" class="peer hidden">
+                            <div class="p-3 rounded-xl border border-slate-200 bg-white text-slate-400 text-center peer-checked:bg-green-50 peer-checked:border-green-500 peer-checked:text-green-600 transition-all">
+                                <span class="text-xs font-bold block">覚えた (OK)</span>
+                            </div>
+                        </label>
+                    </div>
                 </div>
             </div>
 
             <button id="btn-start" class="w-full mt-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transform active:scale-95 transition-all">
                 <i class="ph ph-play-circle text-xl"></i> スタート
             </button>
+
+            <div class="mt-8 pt-6 border-t border-slate-200 text-center">
+                <button id="btn-reset-data" class="text-slate-400 text-xs underline hover:text-red-500">
+                    すべての学習データをリセット
+                </button>
+            </div>
+            
+            <div class="h-8"></div>
+        </div>
+
+        <div id="screen-list" class="screen bg-white flex flex-col h-screen">
+            <header class="p-4 border-b border-slate-100 bg-white flex items-center sticky top-0 z-20 shadow-sm">
+                <button id="btn-list-back" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-600 transition-colors">
+                    <i class="ph ph-arrow-left text-xl"></i>
+                </button>
+                <h2 class="text-lg font-bold text-slate-800 ml-2">単語一覧</h2>
+                <div class="ml-auto text-xs text-slate-500" id="list-count">0 words</div>
+            </header>
+            
+            <div class="flex-1 overflow-y-auto p-0" id="list-container">
+                </div>
         </div>
 
         <div id="screen-learning" class="screen bg-slate-100 overflow-hidden relative transition-colors duration-200">
@@ -224,7 +284,7 @@
                 <button id="btn-quit" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-full transition-colors">
                     <i class="ph ph-x text-xl"></i>
                 </button>
-                <div class="flex-1 h-2 bg-slate-200/50 rounded-full overflow-hidden">
+                <div class="flex-1 h-2 bg-slate-200/50 rounded-full overflow-hidden backdrop-blur-sm">
                     <div id="session-progress-bar" class="h-full bg-blue-500 transition-all duration-300" style="width: 0%"></div>
                 </div>
                 <span id="session-counter" class="text-sm font-bold text-slate-500 font-mono">1/10</span>
@@ -238,9 +298,9 @@
                             <span id="card-no-next" class="absolute top-6 left-6 text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">No. ---</span>
                             <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16">
                                 <h2 id="card-en-next" class="text-4xl font-bold text-slate-800 break-words w-full leading-tight">Next</h2>
-                                <button class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-full shadow-sm">
+                                <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-full shadow-sm opacity-50">
                                     <i class="ph ph-speaker-high text-2xl"></i>
-                                </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -251,23 +311,27 @@
                             
                             <div class="flex-1 flex flex-col items-center justify-center w-full px-4 gap-4 pt-16">
                                 <h2 id="card-en" class="text-4xl font-bold text-slate-800 break-words w-full leading-tight">English</h2>
-                                <button id="btn-speak-front" class="inline-flex items-center justify-center w-12 h-12 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors pointer-events-auto shadow-sm">
+                                <button id="btn-speak-front" class="inline-flex items-center justify-center w-14 h-14 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors pointer-events-auto shadow-sm active:scale-95">
                                     <i class="ph ph-speaker-high text-2xl"></i>
                                 </button>
                             </div>
 
-                            <p class="absolute bottom-6 text-xs text-slate-400">タップして答えを表示</p>
+                            <p class="absolute bottom-6 text-xs text-slate-400 flex items-center gap-1">
+                                <i class="ph ph-hand-tap"></i> タップして答えを表示
+                            </p>
                         </div>
 
                         <div class="card-face card-face-back">
-                            <span class="absolute top-6 left-6 text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded">Answer</span>
+                            <div class="absolute top-6 left-6 flex gap-2">
+                                <span class="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded">Answer</span>
+                            </div>
                             
                             <div class="flex-1 flex flex-col items-center justify-center w-full px-4">
                                 <p id="card-en-sub" class="text-lg text-slate-400 font-medium mb-2">English</p>
                                 
                                 <div class="w-12 h-1 bg-blue-200 rounded-full mb-6"></div>
                                 
-                                <h3 id="card-ja" class="text-3xl font-bold text-slate-800 leading-relaxed break-words w-full">日本語の意味</h3>
+                                <h3 id="card-ja" class="text-2xl font-bold text-slate-800 leading-relaxed break-words w-full">日本語の意味</h3>
                             </div>
 
                             <div class="absolute bottom-6 w-full px-6">
@@ -278,14 +342,14 @@
                 </div>
             </div>
 
-            <div class="p-4 pb-6 grid grid-cols-2 gap-3 z-10 shrink-0">
-                <button id="btn-ng" class="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm border-2 border-red-100 text-red-500 rounded-2xl shadow-sm hover:bg-red-50 active:scale-95 transition-all">
-                    <i class="ph ph-x text-2xl mb-1"></i>
-                    <span class="font-bold text-sm">わからない</span>
+            <div class="p-4 pb-8 grid grid-cols-2 gap-4 z-10 shrink-0 max-w-md mx-auto w-full">
+                <button id="btn-ng" class="flex flex-col items-center justify-center p-4 bg-white/90 backdrop-blur-sm border-2 border-red-100 text-red-500 rounded-2xl shadow-sm hover:bg-red-50 active:scale-95 transition-all">
+                    <i class="ph ph-x text-3xl mb-1"></i>
+                    <span class="font-bold text-xs">わからない</span>
                 </button>
-                <button id="btn-ok" class="flex flex-col items-center justify-center p-4 bg-white/80 backdrop-blur-sm border-2 border-green-100 text-green-500 rounded-2xl shadow-sm hover:bg-green-50 active:scale-95 transition-all">
-                    <i class="ph ph-check text-2xl mb-1"></i>
-                    <span class="font-bold text-sm">覚えた！</span>
+                <button id="btn-ok" class="flex flex-col items-center justify-center p-4 bg-white/90 backdrop-blur-sm border-2 border-green-100 text-green-500 rounded-2xl shadow-sm hover:bg-green-50 active:scale-95 transition-all">
+                    <i class="ph ph-check text-3xl mb-1"></i>
+                    <span class="font-bold text-xs">覚えた！</span>
                 </button>
             </div>
         </div>
@@ -329,10 +393,12 @@
 
     <script>
         let appWordList = [];
-
+        
+        // データの読み込み待ち
         if (typeof wordList !== 'undefined') {
             appWordList = wordList.map((item, index) => ({
                 ...item,
+                // 一意なIDを生成
                 uid: `${item.section}-${item.no}-${item.en}-${index}`
             }));
         } else {
@@ -345,10 +411,13 @@
             });
         }
 
+        const STORAGE_KEY_PROGRESS = 'vocab-progress';
+        const STORAGE_KEY_SESSION = 'vocab-session';
+
         const state = {
             queue: [],
             currentIndex: 0,
-            progress: {},
+            progress: {}, // { uid: 'ok' | 'ng' }
             isFlipped: false,
             animating: false
         };
@@ -356,17 +425,28 @@
         const els = {
             screens: {
                 setup: document.getElementById('screen-setup'),
+                list: document.getElementById('screen-list'),
                 learning: document.getElementById('screen-learning'),
                 result: document.getElementById('screen-result'),
             },
             setup: {
                 selectSection: document.getElementById('select-section'),
                 btnStart: document.getElementById('btn-start'),
-                progressBarOk: document.getElementById('progress-bar-ok'),
-                progressBarNg: document.getElementById('progress-bar-ng'),
+                btnShowList: document.getElementById('btn-show-list'),
+                btnResume: document.getElementById('btn-resume'),
+                btnReset: document.getElementById('btn-reset-data'),
+                
+                barOk: document.getElementById('bar-ok'),
+                barNg: document.getElementById('bar-ng'),
+                barYet: document.getElementById('bar-yet'),
                 statOk: document.getElementById('stat-ok'),
                 statNg: document.getElementById('stat-ng'),
-                targetWeakRadio: document.getElementById('btn-target-weak'),
+                statTotal: document.getElementById('stat-total'),
+            },
+            list: {
+                container: document.getElementById('list-container'),
+                count: document.getElementById('list-count'),
+                btnBack: document.getElementById('btn-list-back'),
             },
             learning: {
                 bgOverlay: document.getElementById('learning-bg-overlay'),
@@ -398,12 +478,14 @@
             }
         };
 
+        // 初期化
         function init() {
             loadProgress();
             
             if (appWordList.length > 0) {
                 renderSetupScreen();
                 setupEventListeners();
+                checkResumeAvailable(); // 再開可能かチェック
                 els.setup.btnStart.disabled = false;
                 els.setup.btnStart.classList.remove('opacity-50', 'cursor-not-allowed');
             } else {
@@ -413,8 +495,10 @@
             }
         }
 
+        /* --- Storage & Logic --- */
+
         function loadProgress() {
-            const saved = localStorage.getItem('vocab-progress');
+            const saved = localStorage.getItem(STORAGE_KEY_PROGRESS);
             if (saved) {
                 try {
                     state.progress = JSON.parse(saved);
@@ -424,14 +508,42 @@
 
         function saveProgress(uid, status) {
             state.progress[uid] = status;
-            localStorage.setItem('vocab-progress', JSON.stringify(state.progress));
+            localStorage.setItem(STORAGE_KEY_PROGRESS, JSON.stringify(state.progress));
+        }
+
+        // セッション保存（途中再開用）
+        function saveSession() {
+            const sessionData = {
+                queueUids: state.queue.map(w => w.uid),
+                currentIndex: state.currentIndex
+            };
+            localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(sessionData));
+        }
+
+        function clearSession() {
+            localStorage.removeItem(STORAGE_KEY_SESSION);
+            checkResumeAvailable();
+        }
+
+        function checkResumeAvailable() {
+            const session = localStorage.getItem(STORAGE_KEY_SESSION);
+            if (session) {
+                try {
+                    const data = JSON.parse(session);
+                    // 終了していないセッションがあるか
+                    if (data.queueUids && data.queueUids.length > 0 && data.currentIndex < data.queueUids.length) {
+                        els.setup.btnResume.classList.remove('hidden');
+                        return;
+                    }
+                } catch(e) {}
+            }
+            els.setup.btnResume.classList.add('hidden');
         }
 
         function switchScreen(screenName) {
             Object.values(els.screens).forEach(el => el.classList.remove('active'));
             els.screens[screenName].classList.add('active');
             
-            // 学習画面のときだけ body のスクロールを完全禁止
             if (screenName === 'learning') {
                 document.body.style.overflow = 'hidden';
             } else {
@@ -439,7 +551,10 @@
             }
         }
 
+        /* --- Setup Screen --- */
+
         function renderSetupScreen() {
+            // セクションプルダウン生成
             const sections = Array.from(new Set(appWordList.map(w => w.section)));
             els.setup.selectSection.innerHTML = '<option value="All">すべて</option>';
             sections.forEach(s => {
@@ -449,54 +564,115 @@
                 els.setup.selectSection.appendChild(opt);
             });
 
+            // 統計表示
             const okCount = appWordList.filter(w => state.progress[w.uid] === 'ok').length;
             const ngCount = appWordList.filter(w => state.progress[w.uid] === 'ng').length;
             const total = appWordList.length;
+            const yetCount = total - okCount - ngCount;
 
-            els.setup.statOk.textContent = `覚えた: ${okCount}`;
-            els.setup.statNg.textContent = `苦手: ${ngCount}`;
-            els.setup.progressBarOk.style.width = `${(okCount / total) * 100}%`;
-            els.setup.progressBarNg.style.width = `${(ngCount / total) * 100}%`;
+            els.setup.statOk.textContent = okCount;
+            els.setup.statNg.textContent = ngCount;
+            els.setup.statTotal.textContent = total;
 
-            if (ngCount === 0) {
-                els.setup.targetWeakRadio.classList.add('opacity-50', 'pointer-events-none');
-            } else {
-                els.setup.targetWeakRadio.classList.remove('opacity-50', 'pointer-events-none');
-            }
+            els.setup.barOk.style.width = `${(okCount / total) * 100}%`;
+            els.setup.barNg.style.width = `${(ngCount / total) * 100}%`;
+            els.setup.barYet.style.width = `${(yetCount / total) * 100}%`;
         }
 
-        function startLearning(retryWeak = false) {
-            let queue = [];
+        /* --- List Screen --- */
+
+        function renderListScreen() {
+            const container = els.list.container;
+            container.innerHTML = ''; // Clear
+
+            els.list.count.textContent = `${appWordList.length} words`;
+
+            appWordList.forEach(word => {
+                const status = state.progress[word.uid];
+                let statusIcon = '<span class="w-6 h-6 rounded-full bg-slate-100 block"></span>'; // 未学習
+                if (status === 'ok') statusIcon = '<i class="ph ph-check-circle text-2xl text-green-500"></i>';
+                if (status === 'ng') statusIcon = '<i class="ph ph-x-circle text-2xl text-red-500"></i>';
+
+                const div = document.createElement('div');
+                div.className = 'list-row flex items-center p-4 border-b border-slate-100 gap-3';
+                div.innerHTML = `
+                    <div class="shrink-0 w-8 text-center">${statusIcon}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-400">No.${word.no}</span>
+                            <h3 class="font-bold text-slate-800 truncate">${word.en}</h3>
+                        </div>
+                        <p class="text-sm text-slate-600 truncate">${word.ja}</p>
+                    </div>
+                    <div class="shrink-0 flex gap-2">
+                         <button class="w-8 h-8 flex items-center justify-center text-blue-500 hover:bg-blue-50 rounded-full" onclick="speak('${word.en.replace(/'/g, "\\'")}')">
+                            <i class="ph ph-speaker-high text-lg"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
             
-            if (retryWeak) {
-                queue = state.queue.filter(w => state.progress[w.uid] === 'ng');
+            switchScreen('list');
+        }
+
+        /* --- Learning Logic --- */
+
+        function startLearning(options = {}) {
+            let queue = [];
+
+            if (options.resume) {
+                // 続きから再開
+                const session = JSON.parse(localStorage.getItem(STORAGE_KEY_SESSION));
+                // UIDリストから単語オブジェクトを復元
+                queue = session.queueUids.map(uid => appWordList.find(w => w.uid === uid)).filter(Boolean);
+                state.currentIndex = session.currentIndex;
             } else {
+                // 新規スタート
+                let mode = 'all'; // all, unlearned, weak_only, memorized
+                if (options.retryWeak) {
+                    mode = 'weak_only';
+                } else {
+                    mode = document.querySelector('input[name="target"]:checked').value;
+                }
+                
                 const section = els.setup.selectSection.value;
                 const order = document.querySelector('input[name="order"]:checked').value;
-                const target = document.querySelector('input[name="target"]:checked').value;
 
                 let filtered = appWordList;
                 if (section !== 'All') filtered = filtered.filter(w => w.section === section);
-                if (target === 'weak_only') filtered = filtered.filter(w => state.progress[w.uid] === 'ng');
+
+                if (mode === 'unlearned') {
+                    filtered = filtered.filter(w => !state.progress[w.uid]);
+                } else if (mode === 'weak_only') {
+                    filtered = filtered.filter(w => state.progress[w.uid] === 'ng');
+                } else if (mode === 'memorized') {
+                    filtered = filtered.filter(w => state.progress[w.uid] === 'ok');
+                }
 
                 if (order === 'random') {
                     filtered = [...filtered].sort(() => Math.random() - 0.5);
                 }
+
                 queue = filtered;
+                state.currentIndex = 0;
             }
 
-            if (queue.length === 0) {
-                alert("対象の単語がありません");
+            if (queue.length === 0 || state.currentIndex >= queue.length) {
+                alert("学習対象の単語がありません");
+                if(options.resume) clearSession();
                 return;
             }
 
             state.queue = queue;
-            state.currentIndex = 0;
             state.isFlipped = false;
             state.animating = false;
 
             renderCard();
             switchScreen('learning');
+            
+            // 新規開始ならセッションも保存しておく
+            if (!options.resume) saveSession();
         }
 
         function renderCard() {
@@ -523,9 +699,7 @@
 
             els.learning.card.classList.remove('is-flipped', 'swipe-right', 'swipe-left');
             els.learning.card.style.transform = '';
-            
             els.learning.bgOverlay.style.backgroundColor = 'transparent';
-
             state.isFlipped = false;
         }
 
@@ -538,18 +712,22 @@
 
             const animationClass = status === 'ok' ? 'swipe-right' : 'swipe-left';
             els.learning.card.classList.add(animationClass);
-
-            if (status === 'ok') {
-                els.learning.bgOverlay.style.backgroundColor = 'rgba(74, 222, 128, 0.2)'; 
-            } else {
-                els.learning.bgOverlay.style.backgroundColor = 'rgba(248, 113, 113, 0.2)';
-            }
+            
+            // 背景色フィードバック
+            els.learning.bgOverlay.style.backgroundColor = status === 'ok' 
+                ? 'rgba(74, 222, 128, 0.2)' 
+                : 'rgba(248, 113, 113, 0.2)';
 
             setTimeout(() => {
-                if (state.currentIndex >= state.queue.length - 1) {
+                state.currentIndex++;
+                
+                // 1単語進むごとにセッション保存
+                saveSession();
+
+                if (state.currentIndex >= state.queue.length) {
+                    clearSession(); // 完了したらセッションクリア
                     showResult();
                 } else {
-                    state.currentIndex++;
                     renderCard();
                     state.animating = false;
                 }
@@ -559,15 +737,16 @@
         function showResult() {
             const sessionQueue = state.queue;
             const okCount = sessionQueue.filter(w => state.progress[w.uid] === 'ok').length;
-            const ngCount = sessionQueue.length - okCount;
+            const ngCount = sessionQueue.filter(w => state.progress[w.uid] === 'ng').length;
             
+            // 今回のセッションでの正答率（NGだったものも含めるか、最終ステータスで見るか。ここでは最終ステータス）
             els.result.percent.textContent = Math.round((okCount / sessionQueue.length) * 100);
             els.result.countOk.textContent = okCount;
             els.result.countNg.textContent = ngCount;
 
             if (ngCount > 0) {
                 els.result.btnRetryWeak.classList.remove('hidden');
-                els.result.btnRetryWeak.onclick = () => startLearning(true);
+                els.result.btnRetryWeak.onclick = () => startLearning({ retryWeak: true });
             } else {
                 els.result.btnRetryWeak.classList.add('hidden');
             }
@@ -575,40 +754,60 @@
             switchScreen('result');
         }
 
-        let englishVoice = null;
+        /* --- Audio & Event Listeners --- */
 
+        let englishVoice = null;
         function loadVoices() {
             const voices = window.speechSynthesis.getVoices();
             englishVoice = voices.find(v => v.lang === 'en-US') 
                         || voices.find(v => v.lang === 'en-GB')
                         || voices.find(v => v.lang.startsWith('en'));
         }
-
         if ('speechSynthesis' in window) {
             window.speechSynthesis.onvoiceschanged = loadVoices;
             loadVoices();
         }
 
-        function speak(text) {
+        // グローバルスコープにしてHTMLから呼べるようにする
+        window.speak = function(text) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const uttr = new SpeechSynthesisUtterance(text);
                 uttr.lang = 'en-US';
                 if (englishVoice) uttr.voice = englishVoice;
-                uttr.rate = 1.0; 
-                uttr.pitch = 1.0;
                 window.speechSynthesis.speak(uttr);
-            } else {
-                alert("音声読み上げに対応していません");
             }
-        }
+        };
 
         function setupEventListeners() {
-            els.setup.btnStart.addEventListener('click', () => startLearning(false));
+            // Setup Screen
+            els.setup.btnStart.addEventListener('click', () => startLearning());
+            els.setup.btnResume.addEventListener('click', () => startLearning({ resume: true }));
+            els.setup.btnShowList.addEventListener('click', renderListScreen);
+            
+            els.setup.btnReset.addEventListener('click', () => {
+                if(confirm('学習記録をすべて消去しますか？\nこの操作は元に戻せません。')) {
+                    localStorage.removeItem(STORAGE_KEY_PROGRESS);
+                    localStorage.removeItem(STORAGE_KEY_SESSION);
+                    state.progress = {};
+                    renderSetupScreen();
+                    checkResumeAvailable();
+                    alert('リセットしました。');
+                }
+            });
 
+            // List Screen
+            els.list.btnBack.addEventListener('click', () => {
+                renderSetupScreen();
+                switchScreen('setup');
+            });
+
+            // Learning Screen
             els.learning.btnQuit.addEventListener('click', () => {
+                // 途中保存は handleNext でされているので、そのまま戻るだけでOK
                 loadProgress();
                 renderSetupScreen();
+                checkResumeAvailable(); // ボタン表示更新
                 switchScreen('setup');
             });
 
@@ -617,27 +816,26 @@
             
             els.learning.btnSpeak.addEventListener('click', (e) => {
                 e.stopPropagation();
-                speak(state.queue[state.currentIndex].en);
+                window.speak(state.queue[state.currentIndex].en);
             });
 
+            // Result Screen
             els.result.btnHome.addEventListener('click', () => {
                 renderSetupScreen();
                 switchScreen('setup');
             });
 
-            // スワイプ処理
+            // --- Swipe Logic ---
             const cardContainer = els.learning.card;
             let startX = null;
             let currentX = 0;
             let isDragging = false;
-            let isSwiped = false; 
 
             const handleStart = (clientX) => {
                 if (state.animating) return;
                 startX = clientX;
                 currentX = clientX;
                 isDragging = true;
-                isSwiped = false;
                 cardContainer.style.transition = 'none';
             };
 
@@ -665,35 +863,27 @@
                 const diff = currentX - startX;
 
                 if (Math.abs(diff) > 100) {
-                    isSwiped = true;
                     handleNext(diff > 0 ? 'ok' : 'ng');
                 } else {
                     cardContainer.style.transition = 'transform 0.3s ease';
                     cardContainer.style.transform = ''; 
                     els.learning.bgOverlay.style.backgroundColor = 'transparent';
-                    setTimeout(() => {
-                        cardContainer.style.transition = '';
-                    }, 300);
+                    setTimeout(() => { cardContainer.style.transition = ''; }, 300);
                 }
                 startX = null;
-                currentX = 0;
             };
 
-            // タッチイベント
-            // 【修正ポイント】passive: false にして preventDefault() を呼び出すことでスクロールを阻止
+            // Touch events
             cardContainer.addEventListener('touchstart', (e) => handleStart(e.touches[0].clientX), { passive: true });
-            
             cardContainer.addEventListener('touchmove', (e) => {
                 if (isDragging) {
-                    // スクロールを止める重要な一行
                     e.preventDefault(); 
                     handleMove(e.touches[0].clientX);
                 }
-            }, { passive: false }); // ここを false にしないと preventDefault が効かない
-            
+            }, { passive: false });
             cardContainer.addEventListener('touchend', handleEnd);
 
-            // マウスイベント（PCデバッグ用）
+            // Mouse events
             cardContainer.addEventListener('mousedown', (e) => handleStart(e.clientX));
             window.addEventListener('mousemove', (e) => {
                 if(isDragging) {
@@ -705,15 +895,18 @@
                 if(isDragging) handleEnd();
             });
 
+            // Flip
             els.learning.card.addEventListener('click', (e) => {
-                if (state.animating || isSwiped) return;
+                if (state.animating) return;
+                // ドラッグとクリックの区別（簡易的）
+                if (startX && Math.abs(currentX - startX) > 10) return;
+                
                 state.isFlipped = !state.isFlipped;
                 els.learning.card.classList.toggle('is-flipped', state.isFlipped);
             });
         }
 
         init();
-
     </script>
 </body>
 </html>
